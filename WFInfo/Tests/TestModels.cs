@@ -44,6 +44,7 @@ namespace WFInfo.Tests
     {
         public string TestCaseName { get; set; }
         public string ImagePath { get; set; }
+        public string DebugImageId { get; set; }
         public string Language { get; set; }
         public string Theme { get; set; }
         public string Category { get; set; }

@@ -160,7 +160,8 @@ namespace WFInfo.Tests
                             break;
                         case "reward":
                         default:
-                            ocrResults = OCR.ProcessRewardScreenForTest(bitmap, _windowService);
+                            result.DebugImageId = testName + "_" + Guid.NewGuid().ToString("N");
+                            ocrResults = OCR.ProcessRewardScreenForTest(bitmap, _windowService, result.DebugImageId);
                             break;
                     }
 

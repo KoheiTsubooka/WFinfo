@@ -3420,7 +3420,7 @@ namespace WFInfo
         /// and returns the list of matched part names (English) without any UI side-effects.
         /// Requires OCR.Init and Main.dataBase to be initialized.
         /// </summary>
-        internal static List<string> ProcessRewardScreenForTest(Bitmap screenshot, IWindowInfoService windowService)
+        internal static List<string> ProcessRewardScreenForTest(Bitmap screenshot, IWindowInfoService windowService, string debugImageId = null)
         {
             var results = new List<string>();
             if (_tesseractInitFailed || _tesseractService == null)
@@ -3429,6 +3429,10 @@ namespace WFInfo
                 return results;
             }
             windowService.UseImage(screenshot);
+            // Test calls bypass the live capture entry point that normally sets timestamp.
+            // Give each case its own files instead of overwriting PartBox(0)_.png, etc.
+            timestamp = debugImageId ?? Guid.NewGuid().ToString("N");
+            Main.AddLog("Reward test debug image ID: " + timestamp);
 
             List<Bitmap> parts;
             try

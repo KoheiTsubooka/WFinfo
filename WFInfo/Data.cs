@@ -1222,7 +1222,8 @@ namespace WFInfo
             // These are canonical output values, not OCR aliases from nameData's keys.
             if (nameData != null) keys.AddRange(nameData.Properties().Select(p => p.Value.ToString()));
             string result = JapaneseRewardNames.Match(name, keys, out distance, out ambiguous);
-            Main.AddLog($"Japanese reward: '{name}' -> '{result ?? "unrecognized"}', distance={distance}, ambiguous={ambiguous}");
+            string loggedName = (name ?? string.Empty).Replace("\r", "\\r").Replace("\n", "\\n");
+            Main.AddLog($"Japanese reward: '{loggedName}' -> '{result ?? "unrecognized"}', distance={distance}, ambiguous={ambiguous}");
             return result;
         }
 
