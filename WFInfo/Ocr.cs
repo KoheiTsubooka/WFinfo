@@ -239,8 +239,6 @@ namespace WFInfo
             watch.Start();
             long start = watch.ElapsedMilliseconds;
 
-            List<Bitmap> parts;
-
             if (file != null)
             {
                 bigScreenshot = file;
@@ -257,29 +255,13 @@ namespace WFInfo
 
             try
             {
-				    parts = ExtractPartBoxAutomatically(out uiScaling, out _, bigScreenshot);
+                firstChecks = ReadRewardScreen(bigScreenshot);
             }
             catch (Exception e)
             {
                 processingActive = false;
                 Debug.WriteLine(e);
                 return;
-            }
-
-
-            int engineCount = Math.Min(parts.Count, _tesseractService.Engines.Length);
-            firstChecks = new string[parts.Count];
-            Task[] tasks = new Task[engineCount];
-            for (int i = 0; i < engineCount; i++)
-            {
-                int tempI = i;
-                tasks[i] = Task.Run(() => { firstChecks[tempI] = OCR.GetRewardTextFromImage(parts[tempI], _tesseractService.Engines[tempI]);});
-            }
-            Task.WaitAll(tasks);
-            // Process remaining parts sequentially if more parts than engines
-            for (int i = engineCount; i < parts.Count; i++)
-            {
-                firstChecks[i] = OCR.GetRewardTextFromImage(parts[i], _tesseractService.FirstEngine);
             }
 
             // Remove any empty (or suspiciously short) items from the array
@@ -2590,7 +2572,7 @@ namespace WFInfo
         // The top bit (upper case and dots/strings, bdfhijklt) > the juicy bit (lower case, acemnorsuvwxz) > the tails (gjpqy)
         // we ignore the "tippy top" because it has a lot of variance, so we just look at the "bottom half of the top"
         private static readonly int[] TextSegments = new int[] { 2, 4, 16, 21 };
-        private static List<Bitmap> ExtractPartBoxAutomatically(out double scaling, out WFtheme active, Bitmap fullScreen, bool suppressDebug = false)
+        private static List<Bitmap> ExtractPartBoxAutomatically(out double scaling, out WFtheme active, Bitmap fullScreen, bool suppressDebug = false, double? scaleOverride = null)
         {
             var watch = new Stopwatch();
             watch.Start();
@@ -2760,14 +2742,19 @@ namespace WFInfo
                 Main.AddLog("RANK " + (5 - i) + " SCALE: " + (topFive[i] + 50) + "%\t\t" + percWeights[topFive[i]].ToString("F2", Main.culture) + " -- " + topWeights[topFive[i]].ToString("F2", Main.culture) + ", " + midWeights[topFive[i]].ToString("F2", Main.culture) + ", " + botWeights[topFive[i]].ToString("F2", Main.culture));
             }
 
-            using (Graphics g = Graphics.FromImage(fullScreen))
-            {
-                g.DrawRectangle(Pens.Red, rectangle);
-                g.DrawRectangle(Pens.Chartreuse, uidebug);
-            }
+            // Diagnostics must never draw into the source used by a second crop attempt.
             if (_settings.Debug && !suppressDebug)
-                fullScreen.Save(Main.AppPath + @"\Debug\BorderScreenshot_" + timestamp + ".png");
-
+            {
+                using (var annotated = (Bitmap)fullScreen.Clone())
+                {
+                    using (Graphics g = Graphics.FromImage(annotated))
+                    {
+                        g.DrawRectangle(Pens.Red, rectangle);
+                        g.DrawRectangle(Pens.Chartreuse, uidebug);
+                    }
+                    annotated.Save(Main.AppPath + @"\Debug\BorderScreenshot_" + timestamp + ".png");
+                }
+            }
 
             //postFilter.Save(Main.appPath + @"\Debug\DebugBox1_" + timestamp + ".png");
             if (_settings.Debug && !suppressDebug)
@@ -2775,6 +2762,13 @@ namespace WFInfo
             scaling = topFive[4] + 50; //scaling was sometimes going to 50 despite being set to 100, so taking the value from above that seems to be accurate.
 
             scaling /= 100;
+            if (scaleOverride.HasValue)
+            {
+                if (scaleOverride.Value < 0.5 || scaleOverride.Value > 1.0)
+                    throw new ArgumentOutOfRangeException(nameof(scaleOverride));
+                scaling = scaleOverride.Value;
+                Main.AddLog("Reward crop scale override: " + scaling.ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
+            }
             double highScaling = scaling < 1.0 ? scaling + 0.01 : scaling;
             double lowScaling = scaling > 0.5 ? scaling - 0.01 : scaling;
 
@@ -2943,6 +2937,99 @@ namespace WFInfo
         //    }
         //    return FilterAndSeparatePartsFromPartBox(partialScreenshot, active);
         //}
+
+        // Shared by live rewards and the screenshot regression runner.
+        private static string[] ReadRewardScreen(Bitmap screenshot)
+        {
+            string originalTimestamp = timestamp;
+            Bitmap selectedPartial = null;
+            try
+            {
+                string[] Read(double? scale, string label, out double detectedScale)
+                {
+                    // The ID stays at the end so the runner can collect every attempt's images.
+                    timestamp = label + "_" + originalTimestamp;
+                    partialScreenshot?.Dispose();
+                    partialScreenshot = null;
+                    var parts = ExtractPartBoxAutomatically(out detectedScale, out _, screenshot,
+                        scaleOverride: scale);
+                    try
+                    {
+                        var text = new string[parts.Count];
+                        int parallelCount = Math.Min(parts.Count, _tesseractService.Engines.Length);
+                        var tasks = new Task[parallelCount];
+                        for (int i = 0; i < parallelCount; i++)
+                        {
+                            int slot = i;
+                            tasks[i] = Task.Run(() => text[slot] = GetRewardTextFromImage(parts[slot],
+                                _tesseractService.Engines[slot]));
+                        }
+                        Task.WaitAll(tasks);
+                        for (int i = parallelCount; i < parts.Count; i++)
+                            text[i] = GetRewardTextFromImage(parts[i], _tesseractService.FirstEngine);
+                        return text;
+                    }
+                    finally { foreach (var part in parts) part.Dispose(); }
+                }
+
+                int[] Distances(string[] readings)
+                {
+                    return readings.Select(text =>
+                    {
+                        string key = Main.dataBase.GetRewardPartName(text, out int distance, out _);
+                        return key == null ? -1 : distance;
+                    }).ToArray();
+                }
+
+                var selected = Read(null, "auto", out double selectedScale);
+                selectedPartial = (Bitmap)partialScreenshot.Clone();
+                if (_settings.Locale == "ja")
+                {
+                    // Legacy density estimation clips Japanese labels, particularly on bright backgrounds.
+                    // Compare an independently sized crop rather than accepting truncated names more loosely.
+                    double alternateScale = ReadUiScaleFromConfig();
+                    if (alternateScale < 0.5 || alternateScale > 1.0) alternateScale = 1.0;
+                    if (Math.Abs(selectedScale - alternateScale) > 0.015)
+                    {
+                        string[] alternate;
+                        double actualScale = alternateScale;
+                        try
+                        {
+                            alternate = Read(alternateScale, "alternate", out actualScale);
+                        }
+                        catch (Exception ex)
+                        {
+                            // A failed optional retry must not discard the original usable reading.
+                            Main.AddLog("Japanese alternate reward crop failed: " + ex.Message);
+                            alternate = Array.Empty<string>();
+                        }
+                        int[] selectedDistances = Distances(selected);
+                        int[] alternateDistances = Distances(alternate);
+                        bool useAlternate = RewardReadingQuality.PreferAlternative(selectedDistances, alternateDistances);
+                        Main.AddLog($"Japanese reward crop: auto={selectedScale:F2}, alternate={actualScale:F2}, " +
+                            $"matched={selectedDistances.Count(d => d >= 0)}/{alternateDistances.Count(d => d >= 0)}, " +
+                            $"selected={(useAlternate ? "alternate" : "auto")}");
+                        if (useAlternate)
+                        {
+                            selected = alternate;
+                            selectedScale = actualScale;
+                            selectedPartial.Dispose();
+                            selectedPartial = (Bitmap)partialScreenshot.Clone();
+                        }
+                    }
+                }
+                uiScaling = selectedScale;
+                partialScreenshot?.Dispose();
+                partialScreenshot = selectedPartial;
+                selectedPartial = null;
+                return selected;
+            }
+            finally
+            {
+                selectedPartial?.Dispose();
+                timestamp = originalTimestamp;
+            }
+        }
 
         private static string GetRewardTextFromImage(Bitmap image, TesseractEngine engine)
         {
@@ -3434,34 +3521,16 @@ namespace WFInfo
             timestamp = debugImageId ?? Guid.NewGuid().ToString("N");
             Main.AddLog("Reward test debug image ID: " + timestamp);
 
-            List<Bitmap> parts;
+            string[] checks;
             try
             {
-                parts = ExtractPartBoxAutomatically(out uiScaling, out _, screenshot);
+                checks = ReadRewardScreen(screenshot);
             }
             catch (Exception e)
             {
-                Main.AddLog("Test ProcessReward: ExtractPartBoxAutomatically failed: " + e.Message);
-                return results;
+                Main.AddLog("Test ProcessReward: reward extraction failed: " + e.Message);
+                throw; // Infrastructure/extraction failures are test errors, not empty successes.
             }
-
-            int engineCount = Math.Min(parts.Count, _tesseractService.Engines.Length);
-            string[] checks = new string[parts.Count];
-            Task[] tasks = new Task[engineCount];
-            for (int i = 0; i < engineCount; i++)
-            {
-                int tempI = i;
-                tasks[i] = Task.Run(() => { checks[tempI] = GetRewardTextFromImage(parts[tempI], _tesseractService.Engines[tempI]); });
-            }
-            Task.WaitAll(tasks);
-
-            // Process remaining parts sequentially if more parts than engines
-            for (int i = engineCount; i < parts.Count; i++)
-            {
-                checks[i] = GetRewardTextFromImage(parts[i], _tesseractService.FirstEngine);
-            }
-
-            foreach (var p in parts) p.Dispose();
 
             var validChecks = checks.Where(s => PartNameValid(s)).ToArray();
 

@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../WFInfo/LanguageProcessing/RewardReadingQuality.cs" Link="RewardReadingQuality.cs" />
     <Compile Include="../../WFInfo/LanguageProcessing/JapaneseRewardNames.cs" Link="JapaneseRewardNames.cs" />
     <Compile Include="../../WFInfo/Services/JapaneseOcrModel.cs" Link="JapaneseOcrModel.cs" />
   </ItemGroup>

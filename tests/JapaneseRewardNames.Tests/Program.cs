@@ -38,6 +38,13 @@ Check(JapaneseRewardNames.Match("Aba Primeの設計図", new[] { "Abb Prime Blue
 Check(JapaneseRewardNames.Match("Aba Primeの設計図", new[] { "Abb Prime Blueprint", "Aba Prime Blueprint" }, out int exact, out bool exactTie) == "Aba Prime Blueprint" && exact == 0 && !exactTie, "exact beats approximate");
 Check(JapaneseRewardNames.Match("Lex Primeの設計図", Array.Empty<string>(), out _, out _) == null, "no fabricated item without database");
 
+Check(RewardReadingQuality.PreferAlternative(new[] { -1, -1, -1, -1 }, new[] { 0, 1, 0, 0 }), "empty wrong crop loses to recognized text");
+Check(RewardReadingQuality.PreferAlternative(new[] { 1, 0, 0, -1 }, new[] { 0, 0, 0, 1 }), "recover fourth slot");
+Check(!RewardReadingQuality.PreferAlternative(new[] { 0, 0, 0, 1 }, new[] { 0, 0, -1, -1 }), "do not replace with lower coverage");
+Check(RewardReadingQuality.PreferAlternative(new[] { 1, 1, 0 }, new[] { 0, 0, 0 }), "prefer intact names at equal coverage");
+Check(!RewardReadingQuality.PreferAlternative(new[] { 0, 0, 0 }, new[] { 0, 0, 0 }), "stable tie");
+Check(!RewardReadingQuality.PreferAlternative(new[] { -1, -1 }, new[] { -1, -1, -1, -1 }), "blank extra slots do not improve score");
+
 string temp = Path.Combine(Path.GetTempPath(), "wfinfo-ja-model-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(temp);
 try
