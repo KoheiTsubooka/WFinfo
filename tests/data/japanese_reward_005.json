@@ -1,0 +1,25 @@
+{
+  "description": "実ゲーム日本語報酬画面（手動転記、OCR成功結果ではない）",
+  "resolution": "1920x1080",
+  "scaling": 0,
+  "menu_scale": "フル",
+  "theme": "vitruvian",
+  "language": "japanese",
+  "category": "reward",
+  "hdr": false,
+  "filters": [],
+  "parts": {
+    "0": "Yareli Prime Neuroptics",
+    "1": "Vadarya Prime Blueprint",
+    "2": "Bronco Prime Receiver",
+    "3": "Daikyu Prime Upper Limb"
+  },
+  "displayed_text": {
+    "0": "Yareli Prime ニューロ\nティックの設計図",
+    "1": "Vadarya Primeの設計\n図",
+    "2": "Bronco Prime レシー\nバー",
+    "3": "Daikyu Prime トップ\nリム"
+  },
+  "source_commit": "e9abca4f00b461c52b3edc685104742d4059a3be",
+  "image_sha256": "49b81d482fd367105e84fe4952562f44cf6797aa7ee27957cf78e5574bcd70ff"
+}

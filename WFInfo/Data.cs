@@ -212,7 +212,10 @@ namespace WFInfo
         public async Task<bool> ReloadItems()
         {
             var enItems = await GetWfmItemList("en");
-            var localizedItems = _settings.Locale == "en" ? enItems : await GetWfmItemList(_settings.Locale);
+            // Japanese rewards use Latin proper names plus locally verified component aliases.
+            // Do not depend on an unverified Japanese market API translation.
+            var localizedItems = _settings.Locale == "en" || _settings.Locale == "ja"
+                ? enItems : await GetWfmItemList(_settings.Locale);
 
             JObject tempMarketItems = new JObject();
             JArray items = JArray.FromObject(enItems.Data["data"]);
@@ -1200,6 +1203,28 @@ namespace WFInfo
         //public string ClosestAutoComplete(string searchQuery) {
         //	return GetPartNameHuman(searchQuery, out _);
         //}
+
+        public string GetRewardPartName(string name, out int distance, out bool ambiguous)
+        {
+            if (_settings.Locale != "ja")
+                return GetPartName(name, out distance, false, out ambiguous);
+
+            var keys = new List<string>();
+            lock (marketItemsLock)
+            {
+                if (marketItems != null)
+                    foreach (var item in marketItems)
+                    {
+                        string[] fields = item.Value.ToString().Split('|');
+                        if (fields.Length >= 2) keys.Add(fields[0]);
+                    }
+            }
+            // These are canonical output values, not OCR aliases from nameData's keys.
+            if (nameData != null) keys.AddRange(nameData.Properties().Select(p => p.Value.ToString()));
+            string result = JapaneseRewardNames.Match(name, keys, out distance, out ambiguous);
+            Main.AddLog($"Japanese reward: '{name}' -> '{result ?? "unrecognized"}', distance={distance}, ambiguous={ambiguous}");
+            return result;
+        }
 
         public string GetPartName(string name, out int low, bool suppressLogging, out bool multipleLowest)
         { // Checks the Levenshtein Distance of a string and returns the index in Names() of the closest part

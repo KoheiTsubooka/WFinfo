@@ -273,13 +273,13 @@ namespace WFInfo
             for (int i = 0; i < engineCount; i++)
             {
                 int tempI = i;
-                tasks[i] = Task.Run(() => { firstChecks[tempI] = OCR.GetTextFromImage(parts[tempI], _tesseractService.Engines[tempI]);});
+                tasks[i] = Task.Run(() => { firstChecks[tempI] = OCR.GetRewardTextFromImage(parts[tempI], _tesseractService.Engines[tempI]);});
             }
             Task.WaitAll(tasks);
             // Process remaining parts sequentially if more parts than engines
             for (int i = engineCount; i < parts.Count; i++)
             {
-                firstChecks[i] = OCR.GetTextFromImage(parts[i], _tesseractService.FirstEngine);
+                firstChecks[i] = OCR.GetRewardTextFromImage(parts[i], _tesseractService.FirstEngine);
             }
 
             // Remove any empty (or suspiciously short) items from the array
@@ -325,7 +325,7 @@ namespace WFInfo
                 {
                     string part = firstChecks[i];
                     #region found a part
-                    string correctName = Main.dataBase.GetPartName(part, out firstProximity[i], false, out _);
+                    string correctName = Main.dataBase.GetRewardPartName(part, out firstProximity[i], out _);
                     
                     // Filter out results with excessively high Levenshtein distances (indicating no valid match)
                     // 9999 is the default value when no match was found, and anything above 50% of string length is likely invalid
@@ -2944,6 +2944,53 @@ namespace WFInfo
         //    return FilterAndSeparatePartsFromPartBox(partialScreenshot, active);
         //}
 
+        private static string GetRewardTextFromImage(Bitmap image, TesseractEngine engine)
+        {
+            if (_settings.Locale != "ja") return GetTextFromImage(image, engine);
+
+            // The theme-filtered reward labels have small glyphs and tight line wrapping.
+            // Enlarge and add whitespace without changing the screenshot or other OCR modes.
+            const int scale = 3;
+            const int padding = 15;
+            using (var prepared = new Bitmap(image.Width * scale + padding * 2,
+                image.Height * scale + padding * 2))
+            {
+                using (var graphics = Graphics.FromImage(prepared))
+                {
+                    graphics.Clear(Color.White);
+                    graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                    graphics.DrawImage(image, new Rectangle(padding, padding,
+                        image.Width * scale, image.Height * scale));
+                }
+
+                string first = string.Empty;
+                string bestText = null;
+                string bestKey = null;
+                int bestDistance = 9999;
+                bool conflict = false;
+                foreach (var mode in new[] { PageSegMode.SingleBlock, PageSegMode.SingleColumn })
+                {
+                    using (var page = engine.Process(prepared, mode))
+                    {
+                        string text = page.GetText().Trim();
+                        if (mode == PageSegMode.SingleBlock) first = text;
+                        string key = Main.dataBase.GetRewardPartName(text, out int distance, out _);
+                        if (key == null) continue;
+                        if (distance < bestDistance)
+                        {
+                            bestText = text;
+                            bestKey = key;
+                            bestDistance = distance;
+                            conflict = false;
+                        }
+                        else if (distance == bestDistance && key != bestKey) conflict = true;
+                    }
+                }
+                // Segmentation modes disagreeing at the best distance are not a reliable match.
+                return conflict ? string.Empty : bestText ?? first;
+            }
+        }
+
         public static string GetTextFromImage(Bitmap image, TesseractEngine engine)
         {
             string ret = "";
@@ -3016,7 +3063,8 @@ namespace WFInfo
             int koreanChars = text.Count(c => c >= 0xAC00 && c <= 0xD7AF);
             // CJK character detection bonus (Chinese Simplified/Traditional)
             int cjkChars = text.Count(c => (c >= 0x4E00 && c <= 0x9FFF) || (c >= 0x3400 && c <= 0x4DBF));
-            int nonLatinChars = koreanChars + cjkChars;
+            int kanaChars = _settings?.Locale == "ja" ? text.Count(c => c >= 0x3040 && c <= 0x30FF) : 0;
+            int nonLatinChars = koreanChars + cjkChars + kanaChars;
             if (nonLatinChars > 0)
             {
                 score += 20; // Bonus for CJK text
@@ -3399,14 +3447,14 @@ namespace WFInfo
             for (int i = 0; i < engineCount; i++)
             {
                 int tempI = i;
-                tasks[i] = Task.Run(() => { checks[tempI] = GetTextFromImage(parts[tempI], _tesseractService.Engines[tempI]); });
+                tasks[i] = Task.Run(() => { checks[tempI] = GetRewardTextFromImage(parts[tempI], _tesseractService.Engines[tempI]); });
             }
             Task.WaitAll(tasks);
 
             // Process remaining parts sequentially if more parts than engines
             for (int i = engineCount; i < parts.Count; i++)
             {
-                checks[i] = GetTextFromImage(parts[i], _tesseractService.FirstEngine);
+                checks[i] = GetRewardTextFromImage(parts[i], _tesseractService.FirstEngine);
             }
 
             foreach (var p in parts) p.Dispose();
@@ -3415,7 +3463,7 @@ namespace WFInfo
 
             foreach (var part in validChecks)
             {
-                string correctName = Main.dataBase.GetPartName(part, out int dist, false, out _);
+                string correctName = Main.dataBase.GetRewardPartName(part, out int dist, out _);
                 if (dist != 9999 && dist <= GetMaxAllowedLevenshteinDistance(part.Length) && !string.IsNullOrEmpty(correctName))
                 {
                     results.Add(correctName);

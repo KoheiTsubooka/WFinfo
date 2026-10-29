@@ -1,0 +1,25 @@
+{
+  "description": "実ゲーム日本語報酬画面（手動転記、OCR成功結果ではない）",
+  "resolution": "1920x1080",
+  "scaling": 0,
+  "menu_scale": "フル",
+  "theme": "vitruvian",
+  "language": "japanese",
+  "category": "reward",
+  "hdr": false,
+  "filters": [],
+  "parts": {
+    "0": "Lavos Prime Blueprint",
+    "1": "Sarofang Prime Handle",
+    "2": "Fang Prime Blueprint",
+    "3": "Akbronco Prime Blueprint"
+  },
+  "displayed_text": {
+    "0": "Lavos Primeの設計図",
+    "1": "Sarofang Prime ハン\nドル",
+    "2": "Fang Primeの設計図",
+    "3": "Akbronco Primeの設\n計図"
+  },
+  "source_commit": "e9abca4f00b461c52b3edc685104742d4059a3be",
+  "image_sha256": "ca21a5cda05745b6e2cbfe05ed6d7a1462a4b9d561791b306f4c209fe5aa4f5e"
+}

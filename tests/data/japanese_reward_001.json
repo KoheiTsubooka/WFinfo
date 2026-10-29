@@ -1,0 +1,25 @@
+{
+  "description": "実ゲーム日本語報酬画面（手動転記、OCR成功結果ではない）",
+  "resolution": "1920x1080",
+  "scaling": 0,
+  "menu_scale": "フル",
+  "theme": "vitruvian",
+  "language": "japanese",
+  "category": "reward",
+  "hdr": false,
+  "filters": [],
+  "parts": {
+    "0": "Lex Prime Blueprint",
+    "1": "Paris Prime Lower Limb",
+    "2": "Velox Prime Barrel",
+    "3": "Burston Prime Blueprint"
+  },
+  "displayed_text": {
+    "0": "Lex Primeの設計図",
+    "1": "Paris Prime ボトム リ\nム",
+    "2": "Velox Prime バレル",
+    "3": "Burston Primeの設計\n図"
+  },
+  "source_commit": "e9abca4f00b461c52b3edc685104742d4059a3be",
+  "image_sha256": "705aa011c9efcd99c5db2b61968b85bbec643d77c554dfcd08eb7db843aff9f0"
+}

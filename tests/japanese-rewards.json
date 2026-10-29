@@ -1,0 +1,10 @@
+{
+  "scenarios": [
+    "data/japanese_reward_001",
+    "data/japanese_reward_002",
+    "data/japanese_reward_003",
+    "data/japanese_reward_004",
+    "data/japanese_reward_005",
+    "data/japanese_reward_006"
+  ]
+}

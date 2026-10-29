@@ -79,7 +79,7 @@ namespace WFInfo
 
         private TesseractEngine CreateEngine()
         {
-            var engine = new TesseractEngine(DataPath, Locale, EngineMode.LstmOnly);
+            var engine = new TesseractEngine(DataPath, Locale == "ja" ? JapaneseOcrModel.Language : Locale, EngineMode.LstmOnly);
             try
             {
                 // Apply universal OCR improvements for all languages
@@ -94,7 +94,7 @@ namespace WFInfo
                 engine.SetVariable("thresholding_method", "0");
 
                 // CJK-specific optimizations
-                if (Locale == "ko" || Locale == "zh-hans" || Locale == "zh-hant")
+                if (Locale == "ko" || Locale == "zh-hans" || Locale == "zh-hant" || Locale == "ja")
                 {
                     engine.SetVariable("textord_noise_normratio", "2.0");
                     engine.SetVariable("chop_enable", "0");
@@ -137,7 +137,7 @@ namespace WFInfo
 
         private TesseractEngine CreateNumbersOnlyEngine()
         {
-            var engine = new TesseractEngine(DataPath, Locale, EngineMode.LstmOnly);
+            var engine = new TesseractEngine(DataPath, Locale == "ja" ? JapaneseOcrModel.Language : Locale, EngineMode.LstmOnly);
             try
             {
                 engine.SetVariable("tessedit_char_whitelist", NumbersOnlyWhitelist);
@@ -240,6 +240,12 @@ namespace WFInfo
                 catch (TesseractException)
                 {
                     DataPath = FallbackDataPath;
+                    if (Locale == "ja")
+                    {
+                        Directory.CreateDirectory(DataPath);
+                        File.Copy(Path.Combine(NormalDataPath, "jpn.traineddata"),
+                            Path.Combine(DataPath, "jpn.traineddata"), true);
+                    }
                     FirstEngine = CreateEngine();
                 }
                 SecondEngine = CreateEngine();
@@ -256,6 +262,12 @@ namespace WFInfo
         
         private void getLocaleTessdata()
         {
+            if (Locale == "ja")
+            {
+                using (var client = CustomEntrypoint.CreateNewWebClient())
+                    JapaneseOcrModel.Ensure(NormalDataPath, client.DownloadFile);
+                return;
+            }
             string traineddata_hotlink_prefix = "https://raw.githubusercontent.com/WFCD/WFinfo/libs/tessdata/";
             JObject traineddata_checksums = new JObject
             {
@@ -270,7 +282,6 @@ namespace WFInfo
                 {"pl", "33bb3c504011b839cf6e2b689ea68578"},
                 //{"tr", "df810a344d6725b2ee3e76682de5a86b"}, - cannot be supported until WFM supports it
                 {"ru", "2e2022eddce032b754300a8188b41419"},
-                //{"ja", "synthetic_md5_japanese"}, - cannot be supported until WFM supports it
                 {"zh-hans", "921bdf9c27a17ce5c7c77c10345ad8fb"},
                 {"zh-hant", "5865dded9ef6d035c165fb14317f1402"},
                 //{"th", "synthetic_md5_thai"} - cannot be supported until WFM supports it

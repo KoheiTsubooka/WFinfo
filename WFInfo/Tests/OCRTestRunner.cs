@@ -256,6 +256,7 @@ namespace WFInfo.Tests
             switch (theme.ToLower())
             {
                 case "orokin": return WFtheme.OROKIN;
+                case "vitruvian": return WFtheme.VITRUVIAN;
                 case "tenno": return WFtheme.TENNO;
                 case "grineer": return WFtheme.GRINEER;
                 case "corpus": return WFtheme.CORPUS;

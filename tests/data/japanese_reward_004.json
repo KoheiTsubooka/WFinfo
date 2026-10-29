@@ -1,0 +1,25 @@
+{
+  "description": "実ゲーム日本語報酬画面（手動転記、OCR成功結果ではない）",
+  "resolution": "1920x1080",
+  "scaling": 0,
+  "menu_scale": "フル",
+  "theme": "vitruvian",
+  "language": "japanese",
+  "category": "reward",
+  "hdr": false,
+  "filters": [],
+  "parts": {
+    "0": "Daikyu Prime Upper Limb",
+    "1": "Paris Prime Upper Limb",
+    "2": "Forma Blueprint",
+    "3": "Corufell Prime Blueprint"
+  },
+  "displayed_text": {
+    "0": "Daikyu Prime トップ\nリム",
+    "1": "Paris Prime トップ リ\nム",
+    "2": "フォーマの設計図",
+    "3": "Corufell Primeの設計\n図"
+  },
+  "source_commit": "e9abca4f00b461c52b3edc685104742d4059a3be",
+  "image_sha256": "17b8815188135985b646acedc628412bf49ec7068be9df756429dc38d2f86be8"
+}

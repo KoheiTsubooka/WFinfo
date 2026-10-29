@@ -557,10 +557,10 @@
                                                   Content="Türkçe"
                                                   FontSize="14"
                                                   Background="#FF1B1B1B" /> -->
-                                    <!-- <ComboBoxItem Tag="ja"
-                                                  Content="日本語"
+                                    <ComboBoxItem Tag="ja"
+                                                  Content="日本語（報酬認識）"
                                                   FontSize="14"
-                                                  Background="#FF1B1B1B" /> -->
+                                                  Background="#FF1B1B1B" />
                                     <ComboBoxItem Tag="zh-hans"
                                                   Content="简体中文"
                                                   FontSize="14"

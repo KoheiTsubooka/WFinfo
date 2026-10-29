@@ -1,0 +1,25 @@
+{
+  "description": "実ゲーム日本語報酬画面（手動転記、OCR成功結果ではない）",
+  "resolution": "1920x1080",
+  "scaling": 0,
+  "menu_scale": "フル",
+  "theme": "vitruvian",
+  "language": "japanese",
+  "category": "reward",
+  "hdr": false,
+  "filters": [],
+  "parts": {
+    "0": "Cedo Prime Stock",
+    "1": "Burston Prime Blueprint",
+    "2": "Sevagoth Prime Neuroptics",
+    "3": "Yareli Prime Chassis"
+  },
+  "displayed_text": {
+    "0": "Cedo Prime ストック",
+    "1": "Burston Primeの設計\n図",
+    "2": "Sevagoth Prime ニュ\nーロティックの設計図",
+    "3": "Yareli Prime シャーシ\nの設計図"
+  },
+  "source_commit": "e9abca4f00b461c52b3edc685104742d4059a3be",
+  "image_sha256": "e5ace2ede3f7b63510e227368170e001a9b29eb88c4fdf92d005fdb87775993c"
+}

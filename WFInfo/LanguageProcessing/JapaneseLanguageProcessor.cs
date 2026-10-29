@@ -52,7 +52,7 @@ namespace WFInfo.LanguageProcessing
 
         private static readonly IReadOnlyDictionary<string, string> _ignoredItemNames = new Dictionary<string, string>
         {
-            ["Forma Blueprint"] = "フォルマ 設計図",
+            ["Forma Blueprint"] = "フォーマの設計図",
             ["Exilus Weapon Adapter Blueprint"] = "エクシラス ウェポン アダプター 設計図",
             ["Kuva"] = "クバ",
             ["Riven Sliver"] = "リヴン スリバー",
@@ -73,7 +73,7 @@ namespace WFInfo.LanguageProcessing
             string.Concat(GenerateCharacterRangeIterator(0x4E00, 0x6FFF)) + 
             GenerateCharacterRange(0x7000, 0x7FFF) + 
             GenerateCharacterRange(0x8000, 0x9FAF) + 
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz "; // Japanese Hiragana, Katakana, Kanji
+            "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz -'"; // Japanese Hiragana, Katakana, Kanji
 
         public override int CalculateLevenshteinDistance(string s, string t)
         {
