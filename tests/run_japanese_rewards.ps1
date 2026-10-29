@@ -22,14 +22,14 @@ try {
     $results = Get-Content $output -Raw -Encoding UTF8 | ConvertFrom-Json
     $results | Select-Object TotalTests, PassedTests, FailedTests, ErrorTests, OverallAccuracy | Format-List
     Write-Host "Results: $output"
-    # Export only debug images from this run, not unrelated screenshots or the entire user log.
+    # Export only small per-slot images from this run; full screenshots remain in WFInfo\Debug.
     $diagnostics = [IO.Path]::ChangeExtension($output, $null) + '-diagnostics'
     New-Item -ItemType Directory -Path $diagnostics | Out-Null
     Copy-Item -LiteralPath $output -Destination (Join-Path $diagnostics 'results.json')
     $debugRoot = Join-Path $env:APPDATA 'WFInfo\Debug'
     foreach ($case in $results.TestResults) {
         if ($case.DebugImageId -and (Test-Path $debugRoot)) {
-            Get-ChildItem -LiteralPath $debugRoot -File -Filter '*.png' |
+            Get-ChildItem -LiteralPath $debugRoot -File -Filter 'PartBox*.png' |
                 Where-Object { $_.BaseName.EndsWith('_' + $case.DebugImageId) } |
                 Copy-Item -Destination $diagnostics
         }

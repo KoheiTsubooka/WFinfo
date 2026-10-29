@@ -45,6 +45,18 @@ Check(RewardReadingQuality.PreferAlternative(new[] { 1, 1, 0 }, new[] { 0, 0, 0 
 Check(!RewardReadingQuality.PreferAlternative(new[] { 0, 0, 0 }, new[] { 0, 0, 0 }), "stable tie");
 Check(!RewardReadingQuality.PreferAlternative(new[] { -1, -1 }, new[] { -1, -1, -1, -1 }), "blank extra slots do not improve score");
 
+var preferredText = new[] { "Lavos Primeの設計図", "unreadable", "Fang Primeの設計図", "Akbronco Primeの設計図" };
+var otherText = new[] { "vos Primeの設計図", "Sarofang Prime ハン\nドル", "Fang Primeの設計図", "Akbronco Primeの設計図" };
+string[] MatchKeys(string[] readings) => readings.Select(t => JapaneseRewardNames.Match(t, keys, out _, out _)).ToArray();
+var combined = RewardReadingQuality.FillMissing(preferredText, MatchKeys(preferredText), otherText, MatchKeys(otherText));
+Check(MatchKeys(combined).SequenceEqual(new[] { "Lavos Prime Blueprint", "Sarofang Prime Handle", "Fang Prime Blueprint", "Akbronco Prime Blueprint" }), "complementary crops recover all four slots");
+Check(preferredText[1] == "unreadable", "combining does not mutate original reading");
+Check(RewardReadingQuality.FillMissing(preferredText, new[] { "Lavos", null, "Fang", "Akbronco" }, otherText, new[] { "Conflict", "Sarofang", "Fang", "Akbronco" }).SequenceEqual(preferredText), "conflicting recognized item forbids combining");
+Check(RewardReadingQuality.FillMissing(preferredText, new[] { "Lavos", null, "Fang", "Akbronco" }, otherText, new[] { null, "Sarofang", "Fang", null }).SequenceEqual(preferredText), "one anchor is insufficient");
+Check(RewardReadingQuality.FillMissing(preferredText, new[] { null, null, "Fang", "Fang" }, otherText, new[] { "Lavos", "Sarofang", "Fang", "Fang" }).SequenceEqual(preferredText), "repeated same item is not two distinct anchors");
+Check(RewardReadingQuality.FillMissing(preferredText, MatchKeys(preferredText), otherText.Take(3).ToArray(), MatchKeys(otherText).Take(3).ToArray()).SequenceEqual(preferredText), "different player counts must not combine");
+Check(RewardReadingQuality.FillMissing(new[] { "bad", "bad" }, new string[] { null, null }, new[] { "a", "b" }, new[] { "A", "B" }).SequenceEqual(new[] { "bad", "bad" }), "no shared anchors must not combine");
+
 string temp = Path.Combine(Path.GetTempPath(), "wfinfo-ja-model-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(temp);
 try

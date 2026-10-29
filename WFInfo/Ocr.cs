@@ -3009,13 +3009,26 @@ namespace WFInfo
                         Main.AddLog($"Japanese reward crop: auto={selectedScale:F2}, alternate={actualScale:F2}, " +
                             $"matched={selectedDistances.Count(d => d >= 0)}/{alternateDistances.Count(d => d >= 0)}, " +
                             $"selected={(useAlternate ? "alternate" : "auto")}");
+                        string[] autoKeys = selected.Select(text =>
+                            Main.dataBase.GetRewardPartName(text, out _, out _)).ToArray();
+                        string[] alternateKeys = alternate.Select(text =>
+                            Main.dataBase.GetRewardPartName(text, out _, out _)).ToArray();
+                        var combined = useAlternate
+                            ? RewardReadingQuality.FillMissing(alternate, alternateKeys, selected, autoKeys)
+                            : RewardReadingQuality.FillMissing(selected, autoKeys, alternate, alternateKeys);
+                        for (int slot = 0; slot < combined.Length; slot++)
+                        {
+                            var preferred = useAlternate ? alternate : selected;
+                            if (combined[slot] != preferred[slot])
+                                Main.AddLog($"Japanese reward crop: restored complementary reading at slot {slot}");
+                        }
                         if (useAlternate)
                         {
-                            selected = alternate;
                             selectedScale = actualScale;
                             selectedPartial.Dispose();
                             selectedPartial = (Bitmap)partialScreenshot.Clone();
                         }
+                        selected = combined;
                     }
                 }
                 uiScaling = selectedScale;
